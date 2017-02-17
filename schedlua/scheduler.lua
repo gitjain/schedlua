@@ -5,6 +5,9 @@ local Queue = require("schedlua.queue")
 local Task = require("schedlua.task");
 local tabutils = require("schedlua.tabutils")
 
+local stopwatch = require("schedlua.stopwatch")
+local sw = stopwatch();
+
 
 --[[
 	The Scheduler supports a cooperative multi-tasking
@@ -102,6 +105,7 @@ end
 -- The 'params' is a table of parameters which will be passed to the function
 -- when it's ready to run.
 function Scheduler.scheduleTask(self, task, params, priority)
+
 	--print("Scheduler.scheduleTask: ", task, params)
 	params = params or {}
 	
@@ -115,16 +119,52 @@ function Scheduler.scheduleTask(self, task, params, priority)
 	-- but, there are some tasks which are system tasks
 	-- which should not be subject to the same scheduling
 	-- as user code tasks
-	-- self.TasksReadyToRun:pinsert(task, priority_comp);
+	
+	--self.TasksReadyToRun:pinsert(task, priority_comp);
 
+	local lastRunTime = task.endTime;
+	local startTime = task.startTime;
 
-	if priority == 0 then
-		self.TasksReadyToRun:pushFront(task);	
-	else
-		self.TasksReadyToRun:enqueue(task);	
+	local function priority_comp1( a,b ) 
+		if b == nil then
+			return false;
+		end
+		if a == nil then
+			return true ;
+		end
+--[[		if a.endTime <= b.endTime then
+			print("comparing", a.Name,b.Name, a.endTime, b.endTime);
+		
+		else
+			print("In else statement",a.Name,b.Name, a.endTime, b.endTime);
+		end --]]
+		return a.startTime <= b.startTime ;
 	end
 
+	--print("time stamp ",  lastRunTime, startTime  );
+		
+	--[[
+		for loop for the queue
+			check till start time of current task is > then the list task 
+			push task at that point in the queue
+	--]]
+
+
+	
+	print ("Length  before" , self.TasksReadyToRun:length(), task:getStatus());
+	if priority == 0 then
+		self.TasksReadyToRun:pushFront(task);	
+	else 
+		self.TasksReadyToRun:pinsert(task, priority_comp1);
+	--	self.TasksReadyToRun:enqueue(task);	
+	end	
+
 	task.state = "readytorun"
+	print ("Length" , self.TasksReadyToRun:length(), task:getStatus());
+
+	for i, item in ipairs(self.TasksReadyToRun) do
+    	print("Entry: ", item.Priority, item.startTime)
+	end
 
 	return task;
 end
@@ -146,6 +186,7 @@ function Scheduler.step(self)
 	-- Now check the regular fibers
 	local task = self.TasksReadyToRun:dequeue()
 
+	
 	-- If no fiber in ready queue, then just return
 	if task == nil then
 		--print("Scheduler.step: NO TASK")
@@ -172,6 +213,7 @@ function Scheduler.step(self)
 	-- run, and it should be set as the currentFiber, and its coroutine
 	-- is resumed.
 	self.CurrentFiber = task;
+	
 	local results = {task:resume()};
 
 	-- once we get results back from the resume, one
@@ -184,8 +226,10 @@ function Scheduler.step(self)
 	-- from the routine
 	--local pcallsuccess = results[1];
 	--table.remove(results,1);
-
+	task.endTime = sw:seconds();
+	
 	local success = results[1];
+
 	table.remove(results,1);
 
 --print("PCALL, RESUME: ", pcallsuccess, success)
@@ -213,6 +257,7 @@ function Scheduler.step(self)
 	-- is if it's state is 'readytorun', otherwise, it will
 	-- stay out of the readytorun list.
 	if task.state == "readytorun" then
+		
 		self:scheduleTask(task, results);
 	end
 end

@@ -2,6 +2,10 @@
 --[[
 	Task, contains stuff related to encapsulated code
 --]]
+
+local stopwatch = require("schedlua.stopwatch");
+local sw = stopwatch();
+
 local Task = {}
 
 setmetatable(Task, {
@@ -48,12 +52,13 @@ end
 
 function Task.setParams(self, params)
 	self.params = params
-
 	return self;
 end
 
 function Task.resume(self)
---print("Task, RESUMING: ", unpack(self.params));
+	--self.startTime = sw:seconds();	
+	
+    --print("Task, RESUMING: ",self.startTime, unpack(self.params));
 	return coroutine.resume(self.routine, unpack(self.params));
 end
 

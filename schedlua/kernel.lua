@@ -6,6 +6,9 @@
 
 --print("== KERNEL INCLUDED ==")
 
+local stopwatch = require("schedlua.stopwatch")
+local sw = stopwatch();
+
 if Kernel ~= nil then
 	return Kernel;
 end
@@ -44,6 +47,8 @@ local function coop(priority, func, ...)
 	local task = Task(func, ...)
 	task.TaskID = getNewTaskID();
 	task.Priority = priority;
+	task.startTime = sw:seconds();
+	task.endTime = sw:seconds();
 	return Kernel.Scheduler:scheduleTask(task, {...});
 end
 

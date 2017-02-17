@@ -38,10 +38,10 @@ local function counter(name, nCount)
 end
 
 local function main()
-	local t0 = spawn(counter, "counter1", 5)
-	local t1 = spawn(task1)
-	local t2 = spawn(task2)
-	local t3 = spawn(counter, "counter2", 7)
+	local t0 = spawn(counter, "task1", 5)
+	local t1 = spawn(task1, "task2")
+	local t2 = spawn(task2,"task3")
+	local t3 = spawn(counter, "task4", 3)
 end
 
 run(main)
